@@ -6,7 +6,7 @@ import math
 # Page Config
 # =============================================================================
 st.set_page_config(
-    page_title="LaunchX Sim #6: The Fundraise",
+    page_title="The Fundraise Simulation",
     page_icon="💰",
     layout="wide",
     initial_sidebar_state="collapsed",
@@ -22,7 +22,7 @@ hide_streamlit_style = """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
 # =============================================================================
-# Custom CSS: Light theme, purple/indigo accents, LaunchX style
+# Custom CSS: Light theme, purple/indigo accents
 # =============================================================================
 st.markdown("""
 <style>
@@ -557,7 +557,7 @@ def render_intro():
     st.markdown("""
     <div class="sim-header">
         <h1>💰 The Fundraise</h1>
-        <p>Simulation #6: Pitch investors, handle tough questions, and negotiate your seed round</p>
+        <p>Pitch investors, handle tough questions, and negotiate your seed round</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -583,6 +583,10 @@ def render_intro():
             <div class="label">Pitch Prep</div>
         </div>
         <div class="metric-box">
+                <div class="metric-box">
+                            <div class="value">⏱️</div>
+                                        <div class="label">~20-25 minutes</div>
+                                                </div>
             <div class="value">2</div>
             <div class="label">Investor Meetings</div>
         </div>
@@ -1283,8 +1287,8 @@ def render_results():
     st.markdown("""
     <div class="cta-section">
         <h3 style="color: #1E1B4B; margin-top: 0;">Ready to keep building?</h3>
-        <p style="color: #4B5563;">This simulation is part of the LaunchX entrepreneurial learning suite.</p>
-        <p style="color: #6C3CE1; font-weight: 600;">[CTA Placeholder: Laurie will add specific call to action]</p>
+        <p style="color: #4B5563;">This simulation is Explore more founder simulations and resources to accelerate your entrepreneurial journey..</p>
+        <p style="color: #6C3CE1; font-weight: 600;">[CTA Placeholder: Add specific call to action]</p>
     </div>
     """, unsafe_allow_html=True)
 
