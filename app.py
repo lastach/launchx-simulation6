@@ -259,83 +259,7 @@ def init_state():
         if k not in st.session_state:
             st.session_state[k] = v
 
-init_state()
-
-# =============================================================================
-# Startup Scenarios
-# =============================================================================
-STARTUPS = {
-    "thermaloop": {
-        "name": "ThermaLoop",
-        "tagline": "Smart vent system that eliminates hot and cold rooms",
-        "stage": "Pre-seed, 6 months in",
-        "traction": "200 beta users, 40% weekly active, $8K MRR from early adopters",
-        "team": "2 co-founders (technical + operations)",
-        "market": "$14B home comfort market, growing 8% annually",
-        "ask": "$750K seed round",
-        "use_of_funds": "Hire 2 engineers, scale manufacturing, expand to 3 new metros",
-        "icon": "🌡️",
-    },
-    "studyloop": {
-        "name": "StudyLoop",
-        "tagline": "AI study coach that adapts to how each student actually learns",
-        "stage": "Pre-seed, 8 months in",
-        "traction": "1,200 students, 55% weekly active, $5K MRR, 3 school pilots",
-        "team": "2 co-founders (AI/ML + education)",
-        "market": "$8B EdTech tutoring market, 12% annual growth",
-        "ask": "$600K seed round",
-        "use_of_funds": "Expand content library, hire growth lead, launch in 10 more schools",
-        "icon": "📚",
-    },
-    "greenplate": {
-        "name": "GreenPlate",
-        "tagline": "Marketplace connecting restaurants with surplus food to budget diners",
-        "stage": "Pre-seed, 5 months in",
-        "traction": "45 restaurant partners, 800 app users, $3K GMV/week",
-        "team": "3 co-founders (marketplace ops + culinary + tech)",
-        "market": "$1.2T food waste problem, $6B surplus food market",
-        "ask": "$500K seed round",
-        "use_of_funds": "Expand to 2 new cities, build logistics layer, hire sales team",
-        "icon": "🥗",
-    },
-}
-
-# =============================================================================
-# Pitch Prep Areas
-# =============================================================================
-PREP_AREAS = {
-    "problem_market": {
-        "label": "Problem & Market",
-        "icon": "🎯",
-        "desc": "How well you articulate the pain point and market opportunity",
-        "low_risk": "You can name the problem but stumble on market sizing and competitive landscape.",
-        "high_prep": "You nail the problem with a real customer story, crisp TAM/SAM/SOM, and clear competitive moat.",
-    },
-    "product_traction": {
-        "label": "Product & Traction",
-        "icon": "📈",
-        "desc": "Your product demo, metrics, and evidence of momentum",
-        "low_risk": "You show the product but metrics feel cherry-picked and growth story is vague.",
-        "high_prep": "You walk through a compelling demo, share cohort data, and show clear product-market fit signals.",
-    },
-    "business_model": {
-        "label": "Business Model",
-        "icon": "💡",
-        "desc": "Revenue model, unit economics, and path to profitability",
-        "low_risk": "You describe revenue streams but can not defend unit economics or margins.",
-        "high_prep": "You present clear unit economics, LTV/CAC ratios, and a believable path to profitability.",
-    },
-    "team_story": {
-        "label": "Team & Story",
-        "icon": "👥",
-        "desc": "Why your team is uniquely positioned to win this market",
-        "low_risk": "You list backgrounds but the 'why us, why now' narrative falls flat.",
-        "high_prep": "You tell a founder story that connects your backgrounds to the problem with authentic conviction.",
-    },
-    "financials_ask": {
-        "label": "Financials & Ask",
-        "icon": "💰",
-        "desc": "Your financial projections, raise amount, and use of funds",
+init_state()ns, raise amount, and use of funds",
         "low_risk": "You state the ask but projections feel like guesses and use of funds is vague.",
         "high_prep": "You present bottom-up projections, clear milestones for the raise, and specific use of every dollar.",
     },
@@ -524,7 +448,7 @@ def score_badge(score, max_score=10):
 
 # =============================================================================
 # Progress Tracker
-# =============================================================================
+# ====================================================================================
 def render_progress_bar():
     """Show a visual progress tracker across the top of every stage."""
     stage = st.session_state.stage
@@ -579,14 +503,14 @@ def render_intro():
     st.markdown("""
     <div class="metric-row">
         <div class="metric-box">
+            <div class="value">⏱️</div>
+            <div class="label">~20-25 minutes</div>
+        </div>
+        <div class="metric-box">
             <div class="value">1</div>
             <div class="label">Pitch Prep</div>
         </div>
         <div class="metric-box">
-                <div class="metric-box">
-                            <div class="value">⏱️</div>
-                                        <div class="label">~20-25 minutes</div>
-                                                </div>
             <div class="value">2</div>
             <div class="label">Investor Meetings</div>
         </div>
@@ -924,6 +848,67 @@ def render_term_sheets():
                 st.rerun()
 
     st.markdown("---")
+
+    # Term Sheet Glossary/Decoder
+    with st.expander("📋 Term Sheet Decoder - Plain Language Explanations"):
+        st.markdown("""
+        #### **Pre-Money Valuation**
+        This is what the investor thinks your company is worth *before* they invest.
+
+        **Example:** If the valuation is $3M and they're investing $750K, they get 20% of the company.
+
+        **Why it matters:** A higher valuation means less dilution for you and other early shareholders.
+
+        ---
+
+        #### **Equity %**
+        The percentage of your company the investor owns after the investment.
+
+        **Example:** If you have 10M shares outstanding and an investor gets 8% equity, they receive 800K shares.
+
+        **Why it matters:** More equity = more dilution. You give up ownership, but you also raise capital.
+
+        ---
+
+        #### **Board Seat**
+        The right to have a representative on your company's board of directors.
+
+        **What this means:** The investor gets a vote on major decisions (hiring, budget, strategy, additional fundraising).
+
+        **Why it matters:** Board seats give investors governance power. Good investors mentor; bad ones micromanage.
+
+        ---
+
+        #### **Pro-Rata Rights**
+        The right to invest in future rounds to maintain their ownership percentage.
+
+        **Example:** If an investor has 8% and you raise a Series A, they can invest enough to stay at 8%.
+
+        **Why it matters:** Pro-rata rights can be valuable (the investor doubles down on you) or frustrating (prevents new investors).
+
+        ---
+
+        #### **Liquidation Preferences**
+        The order investors get paid if your company is sold or fails.
+
+        **Non-participating preferred:** Investors choose either their equity stake OR 1x their investment (whichever is higher), but not both.
+
+        **Participating preferred:** Investors get their money back PLUS their equity stake (more investor-friendly, less founder-friendly).
+
+        **Why it matters:** In a mediocre exit ($5M), 1x liquidation pref may not cover the investor's full stake.
+
+        ---
+
+        #### **Anti-Dilution Protection**
+        Protection for investors if you raise at a lower valuation in the future (a "down round").
+
+        **Broad-based weighted average:** If you raise at a lower valuation, the investor's shares are adjusted down slightly.
+
+        **Narrow-based weighted average:** Harsher adjustment; rarely negotiated by founders.
+
+        **Why it matters:** Down rounds happen. Investors want protection; you want to minimize the damage to your cap table.
+        """)
+
     st.markdown("""
     <div class="card">
         <h4 style="color: #1E1B4B; margin-top: 0;">💡 Things to Consider</h4>
@@ -1147,10 +1132,10 @@ def render_results():
     st.markdown("### Performance Breakdown")
     dim_cols = st.columns(4)
     dims = [
-        ("🎯 Pitch Prep", r["avg_prep"], "How well you allocated your preparation time"),
+        ("🏃 Pitch Prep", r["avg_prep"], "How well you allocated your preparation time"),
         ("🤝 Investor Meetings", r["avg_meeting"], "How you handled Q&A and delivery across all meetings"),
         ("⚖️ Negotiation", r["neg_score"], "How strategically you negotiated terms"),
-        ("🪞 Self-Awareness", r["self_awareness"], "How accurately your confidence matched reality"),
+        ("🧠 Self-Awareness", r["self_awareness"], "How accurately your confidence matched reality"),
     ]
     for i, (label, score, desc) in enumerate(dims):
         with dim_cols[i]:
@@ -1248,17 +1233,17 @@ def render_results():
     if max(prep_vals) - min(prep_vals) >= 6:
         insights.append("⚠️ **Lopsided preparation.** You over-invested in some areas and left others dangerously weak. Real investors notice gaps quickly. Try spreading prep more evenly next time.")
     elif max(prep_vals) - min(prep_vals) <= 2:
-        insights.append("📐 **Even preparation.** You spread your time evenly, which means no catastrophic gaps but also no standout area. Sometimes going deep on 2 to 3 areas and accepting weakness elsewhere is more strategic.")
+        insights.append("📖 **Even preparation.** You spread your time evenly, which means no catastrophic gaps but also no standout area. Sometimes going deep on 2 to 3 areas and accepting weakness elsewhere is more strategic.")
     else:
         insights.append("✅ **Strategic preparation.** You made deliberate trade-offs in how you prepared. That is exactly how real founders operate with limited time.")
 
     # Self-awareness insight
     if r["self_awareness"] >= 7:
-        insights.append("🪞 **Strong self-awareness.** Your confidence closely matched your actual readiness. This is a critical founder skill because it helps you know when to ask for help.")
+        insights.append("🧠 **Strong self-awareness.** Your confidence closely matched your actual readiness. This is a critical founder skill because it helps you know when to ask for help.")
     elif r["self_awareness"] >= 4:
-        insights.append("🪞 **Moderate self-awareness.** Your confidence was sometimes off from reality. Pay attention to where you overestimate yourself; those blind spots can surprise you in real meetings.")
+        insights.append("🧠 **Moderate self-awareness.** Your confidence was sometimes off from reality. Pay attention to where you overestimate yourself; those blind spots can surprise you in real meetings.")
     else:
-        insights.append("🪞 **Self-awareness gap detected.** There was a significant mismatch between how confident you felt and how ready you actually were. This is the most important thing to work on because it affects every decision you make.")
+        insights.append("🧠 **Self-awareness gap detected.** There was a significant mismatch between how confident you felt and how ready you actually were. This is the most important thing to work on because it affects every decision you make.")
 
     # Negotiation insight
     if r["neg_score"] >= 7:
@@ -1287,7 +1272,7 @@ def render_results():
     st.markdown("""
     <div class="cta-section">
         <h3 style="color: #1E1B4B; margin-top: 0;">Ready to keep building?</h3>
-        <p style="color: #4B5563;">This simulation is Explore more founder simulations and resources to accelerate your entrepreneurial journey..</p>
+        <p style="color: #4B5563;">Explore more founder simulations and resources to accelerate your entrepreneurial journey.</p>
         <p style="color: #6C3CE1; font-weight: 600;">[CTA Placeholder: Add specific call to action]</p>
     </div>
     """, unsafe_allow_html=True)
