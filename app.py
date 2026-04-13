@@ -234,7 +234,7 @@ def init_state():
     defaults = {
         "stage": "intro",
         # Startup selection
-        "startup_key": None,
+        "startup_key": "thermaloop",
         # Pitch prep: allocation of 20 prep hours
         "prep_hours_total": 20,
         "prep_alloc": {"problem_market": 0, "product_traction": 0, "business_model": 0, "team_story": 0, "financials_ask": 0},
@@ -275,28 +275,6 @@ STARTUPS = {
         "ask": "$750K seed round",
         "use_of_funds": "Hire 2 engineers, scale manufacturing, expand to 3 new metros",
         "icon": "🌡️",
-    },
-    "studyloop": {
-        "name": "StudyLoop",
-        "tagline": "AI study coach that adapts to how each student actually learns",
-        "stage": "Pre-seed, 8 months in",
-        "traction": "1,200 students, 55% weekly active, $5K MRR, 3 school pilots",
-        "team": "2 co-founders (AI/ML + education)",
-        "market": "$8B EdTech tutoring market, 12% annual growth",
-        "ask": "$600K seed round",
-        "use_of_funds": "Expand content library, hire growth lead, launch in 10 more schools",
-        "icon": "📚",
-    },
-    "greenplate": {
-        "name": "GreenPlate",
-        "tagline": "Marketplace connecting restaurants with surplus food to budget diners",
-        "stage": "Pre-seed, 5 months in",
-        "traction": "45 restaurant partners, 800 app users, $3K GMV/week",
-        "team": "3 co-founders (marketplace ops + culinary + tech)",
-        "market": "$1.2T food waste problem, $6B surplus food market",
-        "ask": "$500K seed round",
-        "use_of_funds": "Expand to 2 new cities, build logistics layer, hire sales team",
-        "icon": "🥗",
     },
 }
 
@@ -528,8 +506,8 @@ def score_badge(score, max_score=10):
 def render_progress_bar():
     """Show a visual progress tracker across the top of every stage."""
     stage = st.session_state.stage
-    stages_order = ["intro", "choose_startup", "pitch_prep", "investor_meeting", "term_sheets", "negotiation", "email_capture", "results"]
-    stage_labels = ["Start", "Pick Startup", "Pitch Prep", "Investor Meetings", "Term Sheets", "Negotiate", "Almost There", "Results"]
+    stages_order = ["intro", "pitch_prep", "investor_meeting", "term_sheets", "negotiation", "email_capture", "results"]
+    stage_labels = ["Start", "Pitch Prep", "Investor Meetings", "Term Sheets", "Negotiate", "Almost There", "Results"]
 
     current_idx = stages_order.index(stage) if stage in stages_order else 0
     total = len(stages_order) - 1
@@ -598,7 +576,8 @@ def render_intro():
     """, unsafe_allow_html=True)
 
     if st.button("Start the Simulation →", type="primary", use_container_width=True):
-        st.session_state.stage = "choose_startup"
+        st.session_state.startup_key = "thermaloop"
+        st.session_state.stage = "pitch_prep"
         st.rerun()
 
 
@@ -1369,8 +1348,10 @@ stage = st.session_state.stage
 if stage == "intro":
     render_intro()
 elif stage == "choose_startup":
-    render_progress_bar()
-    render_choose_startup()
+    # Startup selection removed — ThermaLoop is locked in. Redirect to pitch_prep.
+    st.session_state.startup_key = "thermaloop"
+    st.session_state.stage = "pitch_prep"
+    st.rerun()
 elif stage == "pitch_prep":
     render_progress_bar()
     render_pitch_prep()
