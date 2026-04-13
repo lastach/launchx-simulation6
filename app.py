@@ -1048,24 +1048,91 @@ def render_term_sheets():
 
     # Generate offers based on meeting scores
     if not st.session_state.offers:
+        # --- Rigor: walk-threshold deal breakers and competitive tension -----
+        # Each investor has a walk_threshold on their TOUGH AREA. If the
+        # learner's prep_score on that specific area is below it, the
+        # investor passes entirely — no offer. Real investors walk when their
+        # core diligence question bombs.
+        walk_thresholds = {
+            "team_story": 35,       # Angel walks if team story < 35/100
+            "product_traction": 40, # VC walks if traction < 40/100
+            "business_model": 40,   # Strategic walks if model < 40/100
+            "problem_market": 35,
+            "financials_ask": 30,
+        }
+        # Count how many investors cleared their bar (competitive tension)
+        investors_live = []
         for idx, investor in enumerate(INVESTORS):
-            score = st.session_state.investor_scores[idx] if idx < len(st.session_state.investor_scores) else 5
+            tough = investor.get("tough_area")
+            bar = walk_thresholds.get(tough, 30)
+            tough_prep = calc_prep_score(tough) if tough else 100
+            score = (st.session_state.investor_scores[idx]
+                     if idx < len(st.session_state.investor_scores) else 5)
+            walked = tough_prep < bar
+            investors_live.append({
+                "idx": idx, "walked": walked,
+                "tough_area": tough, "tough_prep": tough_prep,
+                "bar": bar, "score": score,
+            })
+
+        live_count = sum(1 for x in investors_live if not x["walked"] and x["score"] >= 5.0)
+        # Competitive tension: valuation lift + dilution relief when 2+ strong bids
+        if live_count >= 3:
+            tension_mult, tension_eq_cut = 1.15, 2  # 3 suitors bidding each other up
+        elif live_count >= 2:
+            tension_mult, tension_eq_cut = 1.08, 1  # 2 suitors, modest tension
+        else:
+            tension_mult, tension_eq_cut = 1.0, 0   # no real process, no lift
+
+        st.session_state.competitive_tension = {
+            "live_count": live_count,
+            "tension_mult": tension_mult,
+            "tension_eq_cut": tension_eq_cut,
+            "walked_investors": [
+                {"name": INVESTORS[x["idx"]]["name"],
+                 "tough_area": x["tough_area"],
+                 "tough_prep": x["tough_prep"],
+                 "bar": x["bar"]}
+                for x in investors_live if x["walked"]
+            ],
+        }
+
+        for entry in investors_live:
+            idx = entry["idx"]
+            investor = INVESTORS[idx]
             base = investor["offer_base"]
+            score = entry["score"]
+
+            if entry["walked"]:
+                # No offer — investor passed on this round
+                st.session_state.offers.append({
+                    "investor_name": investor["name"],
+                    "investor_type": investor["type"],
+                    "investor_icon": investor["icon"],
+                    "walked": True,
+                    "walk_reason": (
+                        f"Passed after meeting. Their diligence focus area "
+                        f"({entry['tough_area'].replace('_',' ')}) scored "
+                        f"{entry['tough_prep']}/100 in prep — below their "
+                        f"{entry['bar']}/100 bar for extending a term sheet."
+                    ),
+                    "meeting_score": score,
+                })
+                continue
 
             # Score affects valuation and equity
             score_mult = score / 7.0  # normalize around "good" performance
-            val = round(base["valuation"] * score_mult, 1)
-            val = max(2.0, min(6.0, val))  # clamp
+            val = round(base["valuation"] * score_mult * tension_mult, 1)
+            val = max(2.0, min(8.0, val))  # clamp
 
             eq = base["equity"]
             if score >= 7:
                 eq = max(eq - 3, 5)  # better score = less dilution
             elif score < 4:
                 eq = min(eq + 4, 25)  # worse score = more dilution
+            eq = max(5, eq - tension_eq_cut)  # competitive tension reduces dilution
 
             # Liquidation preference + anti-dilution: stronger meeting = founder-friendlier terms
-            # These are the terms that actually matter in a down-market exit, per Wilson Sonsini
-            # standard seed templates and NVCA Model Legal Documents.
             if score >= 7:
                 liq_pref = "1x non-participating"
                 anti_dilution = "Broad-based weighted average"
@@ -1088,11 +1155,56 @@ def render_term_sheets():
                 "meeting_score": score,
                 "liq_pref": liq_pref,
                 "anti_dilution": anti_dilution,
+                "walked": False,
+                "tension_mult": tension_mult,
+                "tension_eq_cut": tension_eq_cut,
             })
+
+    # --- Competitive tension banner -----------------------------------------
+    tension = getattr(st.session_state, "competitive_tension", None) or st.session_state.get("competitive_tension")
+    if tension:
+        live = tension["live_count"]
+        if live >= 2:
+            lift = int((tension["tension_mult"] - 1) * 100)
+            st.info(
+                f"🔥 **Competitive tension: {live} serious bidders.** That's +{lift}% valuation lift "
+                f"and -{tension['tension_eq_cut']}pp dilution vs. a single-suitor process. Running a real "
+                f"process with multiple live term sheets is leverage."
+            )
+        elif live == 1:
+            st.warning(
+                "⚠️ **Only one live bidder.** Without a second term sheet in hand, you have no price "
+                "discovery and no walkaway leverage. Investors know it."
+            )
+        else:
+            st.error(
+                "❌ **No competitive process.** No investor is strong enough to bid against. Any deal "
+                "you get will be on their terms, not yours."
+            )
+        if tension["walked_investors"]:
+            names = ", ".join(
+                f"{w['name'].split(',')[0]} (needed {w['tough_area'].replace('_',' ')} ≥ {w['bar']}/100, got {w['tough_prep']})"
+                for w in tension["walked_investors"]
+            )
+            st.caption(f"Investors who walked: {names}")
 
     cols = st.columns(3)
     for i, offer in enumerate(st.session_state.offers):
         with cols[i]:
+            if offer.get("walked"):
+                st.markdown(f"""
+                <div class="investor-card" style="opacity: 0.6; border: 2px dashed #EF4444;">
+                    <h3>{offer['investor_icon']} {offer['investor_name']}</h3>
+                    <div class="subtitle">{offer['investor_type']}</div>
+                    <div style="margin: 0.8rem 0;">
+                        <span class="score-badge score-low">PASSED</span>
+                    </div>
+                    <p style="color: #991B1B; font-size: 0.9rem;">
+                        <strong>Why they walked:</strong> {offer['walk_reason']}
+                    </p>
+                </div>
+                """, unsafe_allow_html=True)
+                continue
             badge = score_badge(offer["meeting_score"])
             st.markdown(f"""
             <div class="investor-card">
@@ -1118,6 +1230,15 @@ def render_term_sheets():
                 st.session_state.chosen_offer = i
                 st.session_state.stage = "negotiation"
                 st.rerun()
+
+    # Guard: if all investors walked, learner is out of the round
+    if all(o.get("walked") for o in st.session_state.offers):
+        st.error(
+            "**All three investors passed.** No term sheets on the table. The round is over. "
+            "Every investor had a core area they needed to see strength in, and none of them "
+            "got enough signal in prep. This is what a failed fundraise looks like — not "
+            "a rejection letter, but silence from everyone you met with."
+        )
 
     st.markdown("---")
 
