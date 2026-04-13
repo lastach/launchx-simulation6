@@ -422,41 +422,200 @@ INVESTORS = [
 # =============================================================================
 # Q&A Response Options
 # =============================================================================
-def generate_qa_options(area, prep_level, investor_idx):
-    """Generate 3 response options for a Q&A question based on prep level."""
-    # Response quality depends on prep allocation
-    options = {
-        "problem_market": {
-            "strong": "Reference specific customer research, cite TAM/SAM with sources, and connect to a clear wedge strategy.",
-            "medium": "Share the general market opportunity and mention a few customer conversations you have had.",
-            "weak": "Acknowledge it is a big market and promise to follow up with more detailed research.",
-        },
-        "product_traction": {
-            "strong": "Pull up your metrics dashboard, walk through cohort data, and highlight the inflection point in your growth curve.",
-            "medium": "Share top-line growth numbers and mention that retention has been improving month over month.",
-            "weak": "Talk about how excited users are and mention you are working on better analytics.",
-        },
-        "business_model": {
-            "strong": "Present a unit economics breakdown showing current vs. target margins, with clear assumptions and sensitivity analysis.",
-            "medium": "Describe your pricing model and share rough estimates of customer acquisition cost and lifetime value.",
-            "weak": "Explain your revenue model at a high level and note that you plan to optimize pricing over time.",
-        },
-        "team_story": {
-            "strong": "Tell a genuine founder story that connects your unique background to this problem, including a vulnerable moment that shaped your conviction.",
-            "medium": "Highlight your relevant experience and explain why you care about this problem personally.",
-            "weak": "List your professional backgrounds and mention you are committed to making this work.",
-        },
-        "financials_ask": {
-            "strong": "Walk through a bottom-up financial model showing monthly projections, key hiring milestones, and exactly how every dollar of the raise maps to specific outcomes.",
-            "medium": "Share your burn rate, runway expectations, and a general allocation of the raise across hiring, product, and growth.",
-            "weak": "State your fundraising target and mention you will use it for team growth and product development.",
-        },
-    }
+# Question-specific response options keyed by the exact question text.
+# Each question has three response variants: strong (requires prep >= 4),
+# medium (available with any prep), and weak (always available).
+QUESTION_RESPONSES = {
+    # === Investor 0: Maya (Angel) ===
+    "Tell me about a time your co-founder and you deeply disagreed. How did you resolve it?": {
+        "strong": "Share a specific Q2 disagreement about which customer segment to focus on first. Explain how you both wrote one-pagers, debated for a week, and made a data-informed call that turned out right for the wrong reasons — and what you learned about conflict in the process.",
+        "medium": "Mention that you disagree regularly but always talk it through and come to alignment. Share a general example about product priorities.",
+        "weak": "Say conflict is rare because you both stay positive and focused on the mission.",
+    },
+    "What happens to this company if you get hit by a bus tomorrow?": {
+        "strong": "Walk through your bus-factor plan: your cofounder has full access to operations docs, customer relationships are distributed across the team, and the top 5 product decisions are documented. Acknowledge where single-points still exist.",
+        "medium": "Explain that your cofounder could run it, though they would need time to ramp on the technical side.",
+        "weak": "Say the team would figure it out — you have built a strong culture.",
+    },
+    "Why are YOU the person to solve this? What is it about your lived experience?": {
+        "strong": "Tell a short, specific story: the exact moment (a particular cold morning, a specific frustrated customer call) that made you believe this problem needed solving by someone like you, with a concrete tie to your past work.",
+        "medium": "Highlight your relevant experience and explain why you care about this problem personally.",
+        "weak": "Talk about your passion for the space and commitment to making this work.",
+    },
+    "Who is your most passionate user and what would they say about you right now?": {
+        "strong": "Quote a real user by name (with permission) and paraphrase their last message — reference the exact feature they love and the workaround they used before finding you.",
+        "medium": "Share that your power users love the product and give general feedback on what they like.",
+        "weak": "Say users are excited and engagement is strong.",
+    },
+    "How did you personally discover this problem?": {
+        "strong": "Tell the origin story in 90 seconds: the specific situation that hooked you, the first 10 people you talked to, and the quote that told you this was real and ignored by incumbents.",
+        "medium": "Explain that you noticed the problem in your own life and validated it through conversations.",
+        "weak": "Say the problem was obvious once you started looking.",
+    },
+    "What is the one metric that keeps you up at night?": {
+        "strong": "Name the exact metric (e.g., week-4 retention), its current value, its target, and the specific experiment you are running right now to move it.",
+        "medium": "Share that retention is the metric you watch most closely and it has been trending in the right direction.",
+        "weak": "Say all the metrics matter and you watch them all carefully.",
+    },
+    "What would make you shut this down and walk away?": {
+        "strong": "Give a clear kill-criterion: if 12-month retention stays below X% after two more product cycles, you would call it and return remaining capital. Show you have thought about capital stewardship.",
+        "medium": "Say you would shut down if the problem turned out to be smaller than expected or if you could not find a path to profitability.",
+        "weak": "Say you are committed and do not plan to walk away.",
+    },
+    "How do you think about pricing as you scale?": {
+        "strong": "Walk through your pricing ladder: current entry price, planned enterprise tier, and the two price tests you are running this quarter to find elasticity. Tie each tier to a customer persona.",
+        "medium": "Describe your current pricing model and mention plans to experiment with tiered pricing.",
+        "weak": "Say pricing is flexible and you will figure it out as you scale.",
+    },
+    "What is your plan if this round takes 6 months instead of 6 weeks?": {
+        "strong": "Show the bridge plan: which costs you would cut, who you would still hire first, and how much runway you could extend by trimming non-critical spend — with a revised milestone timeline.",
+        "medium": "Mention you have a plan to reduce burn and extend runway if the raise takes longer.",
+        "weak": "Say you are confident the round will close quickly.",
+    },
 
-    area_options = options.get(area, options["problem_market"])
+    # === Investor 1: David (VC) ===
+    "Walk me through your cohort retention. What does month-3 look like?": {
+        "strong": "Pull up the cohort chart: M1 at X%, M3 at Y%, and the specific product change in the October cohort that lifted M3 retention 8 points. Compare it to benchmark for your category.",
+        "medium": "Share your month-over-month retention trend and mention it is improving with each cohort.",
+        "weak": "Say retention is good and users love the product.",
+    },
+    "What is your current growth rate and what is driving it organically vs. paid?": {
+        "strong": "Break it out: 62% organic from referrals and SEO, 38% from paid with a blended CAC of $X. Identify which channel is scaling and which has hit diminishing returns.",
+        "medium": "Share that growth is mostly organic and you are experimenting with a few paid channels.",
+        "weak": "Say growth has been strong month over month.",
+    },
+    "If I gave you $100K tomorrow just for growth, where would you spend it?": {
+        "strong": "Lay out a precise allocation: 60% into the channel already returning 3x CAC, 25% into a second channel you want to de-risk, 15% into creative/content. Justify each bet with the expected CAC and lead volume.",
+        "medium": "Describe one or two channels you would double down on and explain why they feel promising.",
+        "weak": "Say you would experiment across several channels to see what works.",
+    },
+    "Why is this a $100M+ revenue opportunity and not a nice lifestyle business?": {
+        "strong": "Walk through a bottom-up market build: addressable households × attach rate × ARPU, landing at $X00M serviceable revenue by Year 5. Name two adjacent segments that unlock the next leg of growth.",
+        "medium": "Share your TAM estimate and explain the customer segments you plan to expand into.",
+        "weak": "Say the market is very large and there is room to grow.",
+    },
+    "Who are the top 3 competitors and why will you win?": {
+        "strong": "Name the 3 real competitors (including any incumbents), describe their weakness in one sentence each, and explain your structural advantage — the thing they literally cannot copy without rebuilding their business.",
+        "medium": "List a few competitors and mention what makes you different.",
+        "weak": "Say there is no real competitor and you are creating a new category.",
+    },
+    "What are your unit economics today and where do they need to be at Series A?": {
+        "strong": "Today: CAC $X, LTV $Y, payback 11 months, gross margin 58%. Series A target: payback under 8 months, gross margin above 65% — driven by a specific manufacturing cost-down in Q3.",
+        "medium": "Share current CAC and LTV estimates and mention targets for improvement.",
+        "weak": "Say unit economics are still early but trending positively.",
+    },
+    "What is your LTV to CAC ratio?": {
+        "strong": "Current ratio is X:1 with a Y-month payback. Explain the assumptions in your LTV (churn rate, ARPU expansion) and what happens to the ratio at 10x current scale.",
+        "medium": "Share your current LTV to CAC ratio and mention the trend.",
+        "weak": "Say you are focused on improving the ratio and it looks healthy so far.",
+    },
+    "Walk me through your use of funds line by line.": {
+        "strong": "Break out the $750K raise: $420K engineering (2 hires × 18 months), $180K go-to-market, $90K inventory/COGS, $60K buffer. Tie each bucket to a specific milestone.",
+        "medium": "Describe the rough allocation across hiring, product, and growth.",
+        "weak": "Say the funds will extend runway and help you hit your next milestones.",
+    },
+    "What milestones will this round help you hit before your next raise?": {
+        "strong": "Name three clear milestones: $50K MRR, 35% M3 retention, and a signed pilot with an enterprise distribution partner — each mapped to the quarter you will hit it and the leading indicator you watch.",
+        "medium": "Share a few milestones around revenue and product that you plan to hit.",
+        "weak": "Say you plan to keep growing and improving the product before raising again.",
+    },
+    "What key hire do you make first with this capital?": {
+        "strong": "Name the role, the specific gap it fills, and who you are already in conversation with. Explain why this hire unlocks the next 6 months of growth and what happens if you do not make it.",
+        "medium": "Share the role you plan to hire first and why it is important.",
+        "weak": "Say a senior engineer or ops lead, depending on needs at the time.",
+    },
 
-    # If prep is high enough, all 3 options are available
-    # If prep is low, the "strong" option is locked
+    # === Investor 2: Priya (Strategic) ===
+    "How does your business model create incentives for sustainable behavior, not just profit?": {
+        "strong": "Explain how your pricing rewards reduced energy consumption — every kWh a customer saves directly lowers their subscription cost. Show the alignment: your margin improves only when customer impact improves.",
+        "medium": "Describe how your product helps customers save energy and why that is good for everyone.",
+        "weak": "Say the product is inherently sustainable because of what it does.",
+    },
+    "What happens to your margins if your biggest supplier raises prices 30%?": {
+        "strong": "Model it out: gross margin drops from 58% to 46%, which burns 4 months of runway at current volume. Explain your mitigation — a qualified second supplier at 1.2x cost and a redesign reducing BOM 15% by Q2.",
+        "medium": "Share that margins would take a hit but you are working with multiple suppliers to de-risk.",
+        "weak": "Say you have not modeled that exact scenario but would find a way.",
+    },
+    "Can you walk me through a scenario where this business is profitable but not impactful?": {
+        "strong": "Acknowledge the risk directly: if enterprise customers use us only for cost savings and not emissions reduction, we could grow revenue without moving the climate needle. Explain the specific guardrail — impact reporting built into every contract.",
+        "medium": "Share that you think about alignment and have some ideas for keeping impact central.",
+        "weak": "Say profit and impact are tightly aligned in your business.",
+    },
+    "What is the hardest technical problem you have solved so far?": {
+        "strong": "Describe the specific challenge — e.g., real-time airflow prediction across 15 vents with inconsistent sensor data — and walk through the approach, the tradeoffs you rejected, and what the solution unlocks for the product.",
+        "medium": "Describe a technical problem your team has tackled and how you solved it.",
+        "weak": "Say the team has solved many hard problems along the way.",
+    },
+    "How do you measure impact beyond revenue?": {
+        "strong": "Name three concrete metrics: kWh saved per customer per month, CO2 equivalent reduction, and NPS among impact-driven users. Show how you report these to customers quarterly.",
+        "medium": "Mention that you track energy savings and customer outcomes as part of your regular reporting.",
+        "weak": "Say impact is core to the mission and you are building ways to measure it.",
+    },
+    "How does climate regulation risk affect your market opportunity?": {
+        "strong": "Reference two specific regulations (IRA incentives, upcoming EU building efficiency mandates), quantify their effect on your addressable market, and explain how the business works in either regulatory outcome — upside or none.",
+        "medium": "Mention that regulation is a tailwind but you do not depend on it to succeed.",
+        "weak": "Say regulation will only help the space grow.",
+    },
+    "Who are the incumbents and what is their likely response to you?": {
+        "strong": "Name the top two incumbents, explain why their product architecture makes your approach hard to replicate, and map out the partnership vs. competitive paths — including the first to notice you.",
+        "medium": "List the main incumbents and share your take on how they might react.",
+        "weak": "Say incumbents are slow and unlikely to respond in time.",
+    },
+    "What domain expertise does your team have that outsiders can not replicate?": {
+        "strong": "Point to two specific, hard-won insights: your cofounder's 6 years in HVAC manufacturing gives supplier relationships that took a decade to build; your pilot with a retrofit contractor gives distribution that no software-only team can access.",
+        "medium": "Highlight your team's relevant experience and unique backgrounds.",
+        "weak": "Say the team has the right mix of skills and is deeply committed.",
+    },
+    "How does your cap table look today and what does it look like post-round?": {
+        "strong": "Walk through it cleanly: founders 75%, ESOP 10%, prior angels 5%, SAFEs 10% (converting at this round). Post-round: founders 62%, ESOP refresh to 12%, this round ~15%, prior investors ~11%. Acknowledge any messy SAFEs you are cleaning up.",
+        "medium": "Share the rough ownership split and describe how this round would change it.",
+        "weak": "Say the cap table is clean and founder-controlled.",
+    },
+}
+
+# Generic fallback responses if a question is not in the specific map
+GENERIC_RESPONSES = {
+    "problem_market": {
+        "strong": "Reference specific customer research, cite TAM/SAM with sources, and connect to a clear wedge strategy.",
+        "medium": "Share the general market opportunity and mention a few customer conversations you have had.",
+        "weak": "Acknowledge it is a big market and promise to follow up with more detailed research.",
+    },
+    "product_traction": {
+        "strong": "Pull up your metrics dashboard, walk through cohort data, and highlight the inflection point in your growth curve.",
+        "medium": "Share top-line growth numbers and mention that retention has been improving month over month.",
+        "weak": "Talk about how excited users are and mention you are working on better analytics.",
+    },
+    "business_model": {
+        "strong": "Present a unit economics breakdown showing current vs. target margins, with clear assumptions and sensitivity analysis.",
+        "medium": "Describe your pricing model and share rough estimates of customer acquisition cost and lifetime value.",
+        "weak": "Explain your revenue model at a high level and note that you plan to optimize pricing over time.",
+    },
+    "team_story": {
+        "strong": "Tell a genuine founder story that connects your unique background to this problem, including a vulnerable moment that shaped your conviction.",
+        "medium": "Highlight your relevant experience and explain why you care about this problem personally.",
+        "weak": "List your professional backgrounds and mention you are committed to making this work.",
+    },
+    "financials_ask": {
+        "strong": "Walk through a bottom-up financial model showing monthly projections, key hiring milestones, and exactly how every dollar of the raise maps to specific outcomes.",
+        "medium": "Share your burn rate, runway expectations, and a general allocation of the raise across hiring, product, and growth.",
+        "weak": "State your fundraising target and mention you will use it for team growth and product development.",
+    },
+}
+
+
+def generate_qa_options(area, prep_level, investor_idx, question_text=None):
+    """Generate 3 response options for a specific Q&A question based on prep level.
+
+    When question_text is provided and found in QUESTION_RESPONSES, responses are
+    tailored to that specific question. Otherwise, falls back to generic responses
+    for the area.
+    """
+    if question_text and question_text in QUESTION_RESPONSES:
+        area_options = QUESTION_RESPONSES[question_text]
+    else:
+        area_options = GENERIC_RESPONSES.get(area, GENERIC_RESPONSES["problem_market"])
+
+    # If prep is high enough, the "strong" option is unlocked
     available = []
     if prep_level >= 4:
         available.append({"text": area_options["strong"], "quality": "strong", "points": 3})
@@ -506,8 +665,8 @@ def score_badge(score, max_score=10):
 def render_progress_bar():
     """Show a visual progress tracker across the top of every stage."""
     stage = st.session_state.stage
-    stages_order = ["intro", "pitch_prep", "investor_meeting", "term_sheets", "negotiation", "email_capture", "results"]
-    stage_labels = ["Start", "Pitch Prep", "Investor Meetings", "Term Sheets", "Negotiate", "Almost There", "Results"]
+    stages_order = ["intro", "pitch_prep", "investor_meeting", "term_sheets", "negotiation", "results"]
+    stage_labels = ["Start", "Pitch Prep", "Investor Meetings", "Term Sheets", "Negotiate", "Results"]
 
     current_idx = stages_order.index(stage) if stage in stages_order else 0
     total = len(stages_order) - 1
@@ -685,12 +844,38 @@ def render_pitch_prep():
             st.rerun()
 
 
+def _scroll_to_top():
+    """Inject JS that scrolls the parent window to the top.
+
+    Streamlit reruns each meeting render, so we use a per-meeting key as a
+    scroll anchor to ensure the script fires when the investor index changes.
+    """
+    st.markdown(
+        """
+        <script>
+            // Scroll the parent (Streamlit) document to top
+            try {
+                window.parent.document.querySelector('section.main').scrollTo({top: 0, behavior: 'instant'});
+            } catch (e) {
+                try { window.parent.scrollTo(0, 0); } catch (e2) {}
+            }
+        </script>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 def render_investor_meeting():
     idx = st.session_state.current_investor
     if idx >= len(INVESTORS):
         st.session_state.stage = "term_sheets"
         st.rerun()
         return
+
+    # Scroll the page to the top whenever a new investor meeting begins
+    if st.session_state.get("_last_meeting_idx") != idx:
+        st.session_state["_last_meeting_idx"] = idx
+        _scroll_to_top()
 
     investor = INVESTORS[idx]
     startup = STARTUPS[st.session_state.startup_key]
@@ -749,10 +934,12 @@ def render_investor_meeting():
     """, unsafe_allow_html=True)
 
     prep_level_1 = st.session_state.prep_alloc.get(tough_area, 0)
-    options_1 = generate_qa_options(tough_area, prep_level_1, idx)
+    options_1 = generate_qa_options(tough_area, prep_level_1, idx, question_text=q1)
 
     key1 = f"qa_{idx}_{tough_area}"
     choice_labels_1 = [opt["text"] for opt in options_1]
+    tough_label = PREP_AREAS[tough_area]["label"]
+    st.caption(f"📚 Prep in **{tough_label}**: {prep_level_1} hrs — {'strong answer unlocked' if prep_level_1 >= 4 else 'strong answer locked (needs 4+ prep hours)'}")
     selected_1 = st.radio(
         "Your response:",
         choice_labels_1,
@@ -768,10 +955,12 @@ def render_investor_meeting():
     """, unsafe_allow_html=True)
 
     prep_level_2 = st.session_state.prep_alloc.get(secondary_area, 0)
-    options_2 = generate_qa_options(secondary_area, prep_level_2, idx)
+    options_2 = generate_qa_options(secondary_area, prep_level_2, idx, question_text=q2)
 
     key2 = f"qa_{idx}_{secondary_area}"
     choice_labels_2 = [opt["text"] for opt in options_2]
+    secondary_label = PREP_AREAS[secondary_area]["label"]
+    st.caption(f"📚 Prep in **{secondary_label}**: {prep_level_2} hrs — {'strong answer unlocked' if prep_level_2 >= 4 else 'strong answer locked (needs 4+ prep hours)'}")
     selected_2 = st.radio(
         "Your response:",
         choice_labels_2,
@@ -842,9 +1031,22 @@ def render_investor_meeting():
 
 def render_term_sheets():
     startup = STARTUPS[st.session_state.startup_key]
+    # Reset meeting-scroll tracker so re-entering meetings would scroll again
+    st.session_state["_last_meeting_idx"] = None
     st.markdown('<div class="phase-badge">PHASE 3: THE TERM SHEETS</div>', unsafe_allow_html=True)
     st.markdown("### Compare Your Offers")
     st.markdown("Each investor has extended a term sheet based on how your meeting went. Better meetings unlock better terms.")
+
+    with st.expander("📊 How is the Meeting Score calculated?"):
+        st.markdown("""
+        Your **Meeting Score (out of 10)** is calculated per investor and combines three things:
+
+        - **Pitch Prep (60% weight):** how many hours you allocated to each topic during prep, weighted by how much *that specific investor* cares about that topic. An angel weights team and story heavily; a VC weights traction and market.
+        - **Q&A Quality (40% weight):** the strength of your two answers in this meeting. Strong answers require ≥ 4 prep hours in that area to unlock.
+        - **Delivery Style Bonus:** up to +0.5 if your delivery style (data / narrative / vision) matches the investor's personality, +0.2 otherwise.
+
+        **Why scores differ across investors:** Even with the same prep, you'll score higher with the investor whose priorities match where you invested your prep hours. That mismatch is the lesson — investors are not interchangeable.
+        """)
 
     # Generate offers based on meeting scores
     if not st.session_state.offers:
@@ -1075,7 +1277,7 @@ def render_negotiation():
 
         # Compute final results
         compute_results()
-        st.session_state.stage = "email_capture"
+        st.session_state.stage = "results"
         st.rerun()
 
 
@@ -1365,6 +1567,8 @@ elif stage == "negotiation":
     render_progress_bar()
     render_negotiation()
 elif stage == "email_capture":
-    render_email_capture()
+    # Legacy stage routed straight to results (email capture removed)
+    st.session_state.stage = "results"
+    st.rerun()
 elif stage == "results":
     render_results()
