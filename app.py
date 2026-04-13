@@ -1063,6 +1063,19 @@ def render_term_sheets():
             elif score < 4:
                 eq = min(eq + 4, 25)  # worse score = more dilution
 
+            # Liquidation preference + anti-dilution: stronger meeting = founder-friendlier terms
+            # These are the terms that actually matter in a down-market exit, per Wilson Sonsini
+            # standard seed templates and NVCA Model Legal Documents.
+            if score >= 7:
+                liq_pref = "1x non-participating"
+                anti_dilution = "Broad-based weighted average"
+            elif score >= 4:
+                liq_pref = "1x non-participating"
+                anti_dilution = "Narrow-based weighted average"
+            else:
+                liq_pref = "1.5x participating"
+                anti_dilution = "Full ratchet"
+
             st.session_state.offers.append({
                 "investor_name": investor["name"],
                 "investor_type": investor["type"],
@@ -1073,6 +1086,8 @@ def render_term_sheets():
                 "pro_rata": base["pro_rata"],
                 "special": base["special"],
                 "meeting_score": score,
+                "liq_pref": liq_pref,
+                "anti_dilution": anti_dilution,
             })
 
     cols = st.columns(3)
@@ -1091,6 +1106,8 @@ def render_term_sheets():
                     <tr><td><strong>Equity</strong></td><td>{offer['equity']}%</td></tr>
                     <tr><td><strong>Board Seat</strong></td><td>{'Yes' if offer['board_seat'] else 'No'}</td></tr>
                     <tr><td><strong>Pro-rata Rights</strong></td><td>{'Yes' if offer['pro_rata'] else 'No'}</td></tr>
+                    <tr><td><strong>Liquidation Pref</strong></td><td>{offer['liq_pref']}</td></tr>
+                    <tr><td><strong>Anti-dilution</strong></td><td>{offer['anti_dilution']}</td></tr>
                 </table>
                 <p style="font-size: 0.85rem; color: #6B7280; margin-top: 0.8rem;">
                     <strong>Strategic Value:</strong> {offer['special']}
@@ -1304,10 +1321,26 @@ def compute_results():
     # Overall
     overall = avg_prep * 0.2 + avg_meeting * 0.35 + neg_normalized * 0.25 + self_awareness * 0.2
 
-    # Deal quality
+    # Deal quality — explicit component weights so the score is auditable
+    # (audit finding: previously, '3' was a magic constant covering both the
+    # valuation component weight AND the strategic-value base bonus)
+    VALUATION_WEIGHT = 3.0      # pts of 10 tied to valuation (higher = founder-friendlier)
+    EQUITY_WEIGHT = 4.0         # pts of 10 tied to dilution (lower equity = better)
+    STRATEGIC_BONUS = 3.0       # pts of 10 for strategic value irrespective of price
+    # Liquidation-preference penalty (non-standard terms destroy founder value in down cases)
     chosen = st.session_state.offers[st.session_state.chosen_offer]
-    # Higher valuation + lower equity + strategic value = better deal
-    deal_score = (chosen["valuation"] / 6.0) * 3 + ((25 - chosen["equity"]) / 20.0) * 4 + 3  # base 3 for strategic value
+    liq_penalty = 0.0
+    if "participating" in chosen.get("liq_pref", "").lower() and "non-participating" not in chosen.get("liq_pref", "").lower():
+        liq_penalty += 1.0   # participating pref is a meaningful hit
+    if "full ratchet" in chosen.get("anti_dilution", "").lower():
+        liq_penalty += 1.0   # full-ratchet anti-dilution is punitive
+
+    deal_score = (
+        (chosen["valuation"] / 6.0) * VALUATION_WEIGHT
+        + ((25 - chosen["equity"]) / 20.0) * EQUITY_WEIGHT
+        + STRATEGIC_BONUS
+        - liq_penalty
+    )
 
     st.session_state.results = {
         "prep_scores": prep_scores,
@@ -1398,20 +1431,58 @@ def render_results():
             else:
                 st.markdown(f'<span style="color: #3B82F6; font-size: 0.85rem;">↑ Underconfident by {gap:.0f} points</span>', unsafe_allow_html=True)
 
-    # Meeting Recap
+    # Meeting Recap — with per-investor narrative breakdown (score / gap / takeaway)
     st.markdown("### Meeting Recaps")
     for i, recap in enumerate(st.session_state.qa_history):
         badge = score_badge(recap["total"])
         delivery_match = "✓ Great style match" if recap["delivery_bonus"] >= 0.5 else "Okay approach"
+        investor = INVESTORS[i]
+
+        # Narrative: WHY this score — what the investor prioritized vs. where you spent prep
+        priority_areas = sorted(investor["priorities"].items(), key=lambda kv: -kv[1])
+        top_priority_key, top_priority_weight = priority_areas[0]
+        top_priority_label = PREP_AREAS[top_priority_key]["label"]
+        prep_hours_top = st.session_state.prep_alloc.get(top_priority_key, 0)
+
+        strongest_q_key = recap['q1_area'] if recap['q1_score'] > recap['q2_score'] else recap['q2_area']
+        strongest_q_label = PREP_AREAS[strongest_q_key]["label"]
+
+        # Gap analysis: did learner spend hours where THIS investor cared?
+        if prep_hours_top < 4:
+            gap_note = (f"<strong>Gap:</strong> {investor['name'].split(',')[0]} weighted "
+                        f"<em>{top_priority_label}</em> at {int(top_priority_weight*100)}% of their decision, "
+                        f"but you spent only {prep_hours_top} prep hours there. "
+                        f"This investor scored you lower than your average meeting score as a result.")
+        else:
+            gap_note = (f"<strong>Fit:</strong> You invested {prep_hours_top} hours in "
+                        f"<em>{top_priority_label}</em> — exactly this investor's top priority. "
+                        f"That's why your score held up here.")
+
+        # Takeaway: what this investor type teaches about fundraising
+        takeaway_by_type = {
+            "Angel Investor": "Angels back *people* first. For them, the question behind every question is "
+                              "'Will this founder pick themselves back up after a setback?'",
+            "Institutional VC (Seed Fund)": "Seed VCs underwrite *trajectory*. They care less about today's "
+                                             "revenue than the slope — cohort retention, organic growth rate, "
+                                             "and whether you can articulate your next three milestones.",
+            "Strategic Investor": "Strategic investors buy *option value*. They will tolerate slower growth "
+                                   "if the product deepens their core thesis — but they punish weak business "
+                                   "model defensibility harder than any other investor type.",
+        }
+        takeaway = takeaway_by_type.get(investor["type"], "")
+
         st.markdown(f"""
         <div class="card">
             <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h4 style="margin: 0; color: #1E1B4B;">{INVESTORS[i]['icon']} {recap['investor']}</h4>
+                <h4 style="margin: 0; color: #1E1B4B;">{investor['icon']} {recap['investor']}</h4>
                 <span class="score-badge {badge}">{recap['total']:.1f}/10</span>
             </div>
-            <p style="color: #6B7280; font-size: 0.85rem; margin-top: 0.5rem;">
-                Delivery: {delivery_match} |
-                Strongest on: {PREP_AREAS[recap['q1_area']]['label'] if recap['q1_score'] > recap['q2_score'] else PREP_AREAS[recap['q2_area']]['label']}
+            <p style="color: #6B7280; font-size: 0.85rem; margin: 0.5rem 0 0.3rem;">
+                Delivery: {delivery_match} | Strongest answer: {strongest_q_label}
+            </p>
+            <p style="color: #374151; font-size: 0.9rem; margin: 0.4rem 0;">{gap_note}</p>
+            <p style="color: #4B5563; font-size: 0.87rem; margin: 0.4rem 0 0; font-style: italic;">
+                {takeaway}
             </p>
         </div>
         """, unsafe_allow_html=True)
