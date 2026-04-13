@@ -252,8 +252,6 @@ def init_state():
         # Results
         "results": None,
         # Email capture
-        "email": "",
-        "name": "",
     }
     for k, v in defaults.items():
         if k not in st.session_state:
@@ -1323,45 +1321,6 @@ def compute_results():
         "deal_score": min(10, deal_score),
         "chosen_offer": st.session_state.offers[st.session_state.chosen_offer],
     }
-
-
-def render_email_capture():
-    render_progress_bar()
-    overall = st.session_state.results["overall"]
-    grade = "A" if overall >= 8 else "B+" if overall >= 7 else "B" if overall >= 6 else "C+" if overall >= 5 else "C"
-
-    st.markdown(f"""
-    <div class="sim-header">
-        <h1>🎉 Simulation Complete!</h1>
-        <p>Your fundraise grade: <strong>{grade}</strong></p>
-    </div>
-    """, unsafe_allow_html=True)
-
-    st.markdown("""
-    <div class="card card-highlight">
-        <h3 style="color: #1E1B4B; margin-top: 0;">See Your Full Results</h3>
-        <p style="color: #4B5563;">
-            Enter your name and email to unlock your detailed performance breakdown,
-            personalized insights, and real-world action steps.
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
-
-    col1, col2 = st.columns(2)
-    with col1:
-        st.session_state.name = st.text_input("Your name", value=st.session_state.name, placeholder="First name")
-    with col2:
-        st.session_state.email = st.text_input("Your email", value=st.session_state.email, placeholder="you@email.com")
-
-    col_a, col_b = st.columns(2)
-    with col_a:
-        if st.button("View My Results →", type="primary", use_container_width=True):
-            st.session_state.stage = "results"
-            st.rerun()
-    with col_b:
-        if st.button("Skip for now", use_container_width=True):
-            st.session_state.stage = "results"
-            st.rerun()
 
 
 def render_results():
